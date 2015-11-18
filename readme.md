@@ -1,6 +1,6 @@
 
 
-# measurement-host
+# measure-host
 
 This is a small service application to retrieve and send measurement
 data. It will accept connections on TCP port 6423, which can either 

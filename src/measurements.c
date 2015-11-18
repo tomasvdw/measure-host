@@ -4,17 +4,15 @@
 * Maintains the set of current measurements
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 
 #include <unistd.h>
+#include <assert.h>
 
 
 #include "measurements.h"
 
-#define DATABASE "measure-host.xml"
 
-static int initialized = 0;
 static void init()
 {
 
@@ -31,14 +29,17 @@ const char * measurement_get(const char *key)
    return "";
 }
 
+void measurement_write()
+{
+}
+
 
 #ifdef TEST
 
-void measurement_tests()
+static void test_getset()
 {
    // fresh start
    unlink(DATABASE);
-
 
    measurement_set("wok", "bar");
    measurement_set("foo", "3.0");
@@ -50,9 +51,27 @@ void measurement_tests()
    puts("Measurement tests OK");
 }
 
+static void test_persist()
+{
+   // fresh start
+   unlink(DATABASE);
+
+   measurement_set("wok", "baz");
+   measurement_write();
+
+   // force reload
+   init();
+
+
+   // should get data from disk
+   assert(strcmp(measurement_get("wok"), "baz") == 0);
+}
+
+
 int main(void) {
 
-   measurement_tests();
+   test_getset();
+   test_persist();
 
 
    return 0;
