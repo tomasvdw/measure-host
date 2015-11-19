@@ -2,7 +2,7 @@
 * measurements.c
 *
 * Maintains the set of current measurements
- */
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,55 +23,55 @@ static ezxml_t store;
 // or inits a new measurement store
 static void init()
 {
-  // already initialized
-  if (store != NULL)
-    return;
+   // already initialized
+   if (store != NULL)
+   return;
 
-  FILE *f = fopen(DATABASE, "r");
-  if (f != NULL)
-  {
-    // load previous version
-    store = ezxml_parse_fp(f);
-    if (store == NULL)
+   FILE *f = fopen(DATABASE, "r");
+   if (f != NULL)
+   {
+      // load previous version
+      store = ezxml_parse_fp(f);
+      if (store == NULL)
       perror(ezxml_error(store));
-    else
+      else
       return;
-  }
-  
-  store = ezxml_new("status");
+   }
+
+   store = ezxml_new("status");
 }
 
 
 // Upserts a measurement value
 void measurement_set(const char *key, const char *value)
 {
-  init();
+   init();
 
-  // find existing child
-  ezxml_t child = ezxml_child(store, key);
+   // find existing child
+   ezxml_t child = ezxml_child(store, key);
 
-  if (child == NULL)
-  {
-    // add new key
-    child = ezxml_add_child(store, key, 0);
-  }
+   if (child == NULL)
+   {
+      // add new key
+      child = ezxml_add_child(store, key, 0);
+   }
 
-  ezxml_set_txt(child, value);
+   ezxml_set_txt(child, value);
 }
 
 // returns the current value of the given key
 // or an empty string if the key was not found
 const char * measurement_get(const char *key)
 {
-  init();
+   init();
 
-  ezxml_t child = ezxml_child(store, key);
+   ezxml_t child = ezxml_child(store, key);
 
-  if (child == NULL)
-    return "";
-  else
-    return ezxml_txt(child);
-  
+   if (child == NULL)
+   return "";
+   else
+   return ezxml_txt(child);
+
 }
 
 
