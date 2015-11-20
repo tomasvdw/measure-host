@@ -10,5 +10,5 @@ int request_findend(const char *input);
 // returns NULL if the request is invalid
 // or a response otherwise
 // caller should free() the returned string
-char *request_process(const char *request, int len);
+char *request_process(char *request, int len);
 
