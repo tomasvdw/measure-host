@@ -13,6 +13,8 @@
 #include <sys/socket.h>
 #include <netinet/ip.h>
 
+#include "request.h"
+
 #define PORT       6423
 
 // listen queue
@@ -99,6 +101,14 @@ static void server_accept()
     clients[incoming_fd].len = 0;
 }
 
+void server_closesock(int sock)
+{
+    printf("Closing %d\n", sock);
+    free(clients[sock].buffer);
+    close(sock);
+    FD_CLR(sock, &fdmask_main);
+}
+
 // reads on the given sock and stores it in the client buffer
 // returns 0 if the connection was closed
 // or the amout of data read
@@ -122,17 +132,13 @@ int server_read(int sock)
     if (r <= 0)
     {
         // error or EOF; handle the same
-        printf("Closing %d\n", r);
-        free(clients[sock].buffer);
-        close(sock);
-        FD_CLR(sock, &fdmask_main);
+        server_closesock(sock);
         return 0;
     }
     else
     {
         // read and store in client[] buffer
         clients[sock].len += r;
-        printf("Read returned %d\n", r);
         clients[sock].buffer[clients[sock].len] = '\0';
         return r;
     }
@@ -142,8 +148,33 @@ int server_read(int sock)
 // and processes and responds if possible
 void server_tryprocess(int sock)
 {
-    printf("Current buffer=%s\n", 
-            clients[sock].buffer);
+    int end = request_findend(clients[sock].buffer);
+    if (end == -1)
+        return; // not yet a complete request
+
+    char *result = request_process(clients[sock].buffer, end);
+
+    if (result == NULL)
+    {
+        // error, close connection
+        server_closesock(sock);
+    }
+    else
+    {
+        // success.
+        // something to send?
+        if (*result != '\0') 
+        {
+            int s = write(sock, result, strlen(result));
+            if (s < 0)
+            {
+                perror("write() failed");
+                server_closesock(sock);
+            }
+        }
+        free(result);
+    }
+
 }
 
 
