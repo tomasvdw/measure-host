@@ -1,8 +1,8 @@
 /*
-* measurements.c
-*
-* Maintains the set of current measurements
-*/
+ * measurements.c
+ *
+ * Maintains the set of current measurements
+ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,54 +23,54 @@ static ezxml_t store;
 // or inits a new measurement store
 static void init()
 {
-   // already initialized
-   if (store != NULL)
-   return;
+    // already initialized
+    if (store != NULL)
+        return;
 
-   FILE *f = fopen(DATABASE, "r");
-   if (f != NULL)
-   {
-      // load previous version
-      store = ezxml_parse_fp(f);
-      if (store == NULL)
-      perror(ezxml_error(store));
-      else
-      return;
-   }
+    FILE *f = fopen(DATABASE, "r");
+    if (f != NULL)
+    {
+        // load previous version
+        store = ezxml_parse_fp(f);
+        if (store == NULL)
+            perror(ezxml_error(store));
+        else
+            return;
+    }
 
-   store = ezxml_new("status");
+    store = ezxml_new("status");
 }
 
 
 // Upserts a measurement value
 void measurement_set(const char *key, const char *value)
 {
-   init();
+    init();
 
-   // find existing child
-   ezxml_t child = ezxml_child(store, key);
+    // find existing child
+    ezxml_t child = ezxml_child(store, key);
 
-   if (child == NULL)
-   {
-      // add new key
-      child = ezxml_add_child(store, key, 0);
-   }
+    if (child == NULL)
+    {
+        // add new key
+        child = ezxml_add_child(store, key, 0);
+    }
 
-   ezxml_set_txt(child, value);
+    ezxml_set_txt(child, value);
 }
 
 // returns the current value of the given key
 // or an empty string if the key was not found
 const char * measurement_get(const char *key)
 {
-   init();
+    init();
 
-   ezxml_t child = ezxml_child(store, key);
+    ezxml_t child = ezxml_child(store, key);
 
-   if (child == NULL)
-   return "";
-   else
-   return ezxml_txt(child);
+    if (child == NULL)
+        return "";
+    else
+        return ezxml_txt(child);
 
 }
 
@@ -78,28 +78,28 @@ const char * measurement_get(const char *key)
 // Stores the current measurement state to disk
 void measurement_write()
 {
-   // try writing to new file
-   FILE *fnew = fopen(DATABASE ".new", "w");
-   if (!fnew)
-   {
-      perror("Can't write database");
-      return;
-   }
+    // try writing to new file
+    FILE *fnew = fopen(DATABASE ".new", "w");
+    if (!fnew)
+    {
+        perror("Can't write database");
+        return;
+    }
 
-   // convert to string & write
-   char * xml = ezxml_toxml(store);
-   if (fputs(xml, fnew) == EOF)
-   {
-      free(xml);
-      return;
-   }
+    // convert to string & write
+    char * xml = ezxml_toxml(store);
+    if (fputs(xml, fnew) == EOF)
+    {
+        free(xml);
+        return;
+    }
 
-   free(xml);
-   fclose(fnew);
+    free(xml);
+    fclose(fnew);
 
-   // we use rename-overwrite to ensure
-   // atomic write
-   rename(DATABASE ".new", DATABASE);
+    // we use rename-overwrite to ensure
+    // atomic write
+    rename(DATABASE ".new", DATABASE);
 }
 
 
@@ -107,68 +107,68 @@ void measurement_write()
 
 static void test_getset()
 {
-   // fresh start
-   unlink(DATABASE);
-   store = NULL;
+    // fresh start
+    unlink(DATABASE);
+    store = NULL;
 
-   measurement_set("wok", "bar");
-   measurement_set("foo", "3.0");
-   measurement_set("foo", "2.0");
+    measurement_set("wok", "bar");
+    measurement_set("foo", "3.0");
+    measurement_set("foo", "2.0");
 
-   assert(strcmp(measurement_get("wok"), "bar") == 0);
-   assert(strcmp(measurement_get("foo"), "2.0") == 0);
+    assert(strcmp(measurement_get("wok"), "bar") == 0);
+    assert(strcmp(measurement_get("foo"), "2.0") == 0);
 
-   puts("Measurement tests OK");
+    puts("Measurement tests OK");
 }
 
 static void test_persist()
 {
-   // fresh start
-   unlink(DATABASE);
-   store = NULL;
+    // fresh start
+    unlink(DATABASE);
+    store = NULL;
 
-   measurement_set("wok", "baz");
-   measurement_write();
-   measurement_write();
+    measurement_set("wok", "baz");
+    measurement_write();
+    measurement_write();
 
-   // force reload
-   store = NULL;
+    // force reload
+    store = NULL;
 
 
-   // should get data from disk
-   assert(strcmp(measurement_get("wok"), "baz") == 0);
+    // should get data from disk
+    assert(strcmp(measurement_get("wok"), "baz") == 0);
 }
 
 static void test_failpersist()
 {
-   // fresh start
-   unlink(DATABASE);
-   store = NULL;
+    // fresh start
+    unlink(DATABASE);
+    store = NULL;
 
-   measurement_set("wok", "baz");
-   measurement_write();
+    measurement_set("wok", "baz");
+    measurement_write();
 
-   // mess up template file
-   FILE *f = fopen(DATABASE, "w");
-   fputs("ugh", f);
-   fclose(f);
+    // mess up template file
+    FILE *f = fopen(DATABASE, "w");
+    fputs("ugh", f);
+    fclose(f);
 
-   // force reload
-   store = NULL;
+    // force reload
+    store = NULL;
 
-   // should be empty
-   assert(strcmp(measurement_get("wok"), "") == 0);
+    // should be empty
+    assert(strcmp(measurement_get("wok"), "") == 0);
 }
 
 
 int main(void) {
 
-   test_getset();
-   test_failpersist();
-   test_persist();
+    test_getset();
+    test_failpersist();
+    test_persist();
 
 
-   return 0;
+    return 0;
 }
 
 #endif
