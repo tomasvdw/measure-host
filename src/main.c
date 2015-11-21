@@ -15,10 +15,10 @@
 
 #include "request.h"
 
-#define PORT       6423
+#define PORT             6423
 
 // listen queue
-#define QUEUE_SIZE      25
+#define QUEUE_SIZE       25
 
 #define READ_CHUNK_SIZE  4
 #define MAX_REQUEST_SIZE 32 * 1024
@@ -74,9 +74,9 @@ static void server_listen()
 
 }
 
+// accept new connection
 static void server_accept()
 {
-    // accept new connection
     struct sockaddr_in clientaddr;
     int size = sizeof (clientaddr);
     int incoming_fd = accept(fd_listen, 
@@ -158,22 +158,26 @@ void server_tryprocess(int sock)
     {
         // error, close connection
         server_closesock(sock);
+        return;
     }
-    else
+    // success.
+    // something to send?
+    if (*result != '\0') 
     {
-        // success.
-        // something to send?
-        if (*result != '\0') 
+        int s = write(sock, result, strlen(result));
+        if (s < 0)
         {
-            int s = write(sock, result, strlen(result));
-            if (s < 0)
-            {
-                perror("write() failed");
-                server_closesock(sock);
-            }
+            perror("write() failed");
+            server_closesock(sock);
+            return;
         }
-        free(result);
     }
+    free(result);
+
+    // move data after this request to the start of the buffer
+    memmove(clients[sock].buffer, clients[sock].buffer+end, 
+            clients[sock].len - end + 1);
+    clients[sock].len -= end;
 
 }
 
@@ -219,7 +223,6 @@ static void server_run()
 }
 
 
-#ifndef TEST
 int main(void) {
 
     puts("Starting service");
@@ -230,11 +233,3 @@ int main(void) {
 }
 
 
-#else // ifndef TEST
-
-int main(void) {
-    puts("ALL OK");
-    return EXIT_SUCCESS;
-}
-
-#endif
