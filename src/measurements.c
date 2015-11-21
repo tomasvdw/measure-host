@@ -53,10 +53,10 @@ void measurement_set(const char *key, const char *value)
     if (child == NULL)
     {
         // add new key
-        child = ezxml_add_child(store, key, 0);
+        child = ezxml_add_child_d(store, key, 0);
     }
 
-    ezxml_set_txt(child, value);
+    ezxml_set_txt_d(child, value);
 }
 
 // returns the current value of the given key
