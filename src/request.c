@@ -16,7 +16,7 @@
 
 
 // handles parsed update request
-void process_update(ezxml_t request)
+static void process_update(ezxml_t request)
 {
     // set each child in the measurement store
     ezxml_t child = request->child;
@@ -58,7 +58,7 @@ static void append_result(const char *key, char **result, int *alloced)
 
 // handles parsed retrieve request;
 // returns xml doc that must be freed
-char * process_retrieve(ezxml_t request)
+static char * process_retrieve(ezxml_t request)
 {
     // initialize result-doc
     int alloced = strlen("<status>\n</status>\n")+1;
