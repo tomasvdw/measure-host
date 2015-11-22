@@ -32,10 +32,12 @@ static void init()
     {
         // load previous version
         store = ezxml_parse_fp(f);
+        fclose(f);
         if (store == NULL)
             perror(ezxml_error(store));
         else
             return;
+
     }
 
     store = ezxml_new("status");
