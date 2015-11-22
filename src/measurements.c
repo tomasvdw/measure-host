@@ -77,6 +77,14 @@ const char * measurement_get(const char *key)
 }
 
 
+// Get all keys as a \0\0-terminated list of strings
+// Caller should free()
+char * measurement_getkeys()
+{
+    char *result = malloc(1);
+    return result;
+}
+
 // Stores the current measurement state to disk
 void measurement_write()
 {
@@ -163,12 +171,32 @@ static void test_failpersist()
 }
 
 
+static void test_getall()
+{
+    // fresh start
+    unlink(DATABASE);
+    store = NULL;
+
+    measurement_set("wok", "baz");
+    measurement_set("wor", "baz");
+    measurement_set("bop", "baz");
+
+    char *res = measurement_getkeys();
+
+    // note we're testing fixed order, but this is not necessary
+    assert(memcmp(res, "bop\0wor\0wok\0\0", (3*4)+1) ==0);
+    
+}
+
+
 int main(void) {
 
     test_getset();
     test_failpersist();
     test_persist();
+    test_getall();
 
+    puts("Measurement tests ok");
 
     return 0;
 }
