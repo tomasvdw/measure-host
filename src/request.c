@@ -67,11 +67,26 @@ static char * process_retrieve(ezxml_t request)
 
     // browse requested keys
     ezxml_t child = ezxml_child(request, "key");
-    while(child != NULL)
+    if (child == NULL)
     {
-        append_result(ezxml_txt(child), &result, &alloced);
+        // no children means retrieve all
+        char *allkeys = measurement_getkeys();
+        char *p = allkeys;
+        while(*p) // end at \0\0
+        {
+            append_result(p, &result, &alloced);
+            p += strlen(p) + 1;
+        }
+        free(allkeys);
+    }
+    else
+    {
+        while(child != NULL)
+        {
+            append_result(ezxml_txt(child), &result, &alloced);
 
-        child = ezxml_next(child);
+            child = ezxml_next(child);
+        }
     }
     strcat(result, "</status>\n");
     return result;
@@ -186,9 +201,21 @@ void measurement_set(const char *key, const char *value)
     count_set++;
 }
 
+void measurement_write()
+{
+}
+
 const char * measurement_get(const char *key)
 {
     return "wok";
+}
+
+// mock getting all keys
+char * measurement_getkeys()
+{
+    char *p = malloc(50);
+    memcpy(p, "key1\0key2\0\0", 11);
+    return p;
 }
 
 void test_findend()
@@ -268,11 +295,28 @@ void test_receive()
 
 }
 
+void test_receive_all()
+{
+    char *res = dotest_process(
+            "<retrieve />"
+            );
+
+    // should be nicely aligned
+    assert(strcmp(res, 
+                "<status>\n"
+                "  <key1>wok</key1>\n"
+                "  <key2>wok</key2>\n"
+                "</status>\n") == 0
+          );
+
+}
+
 int main(void) {
 
     test_findend();
     test_update();
     test_receive();
+    test_receive_all();
     puts("Request tests OK");
     return 0;
 }

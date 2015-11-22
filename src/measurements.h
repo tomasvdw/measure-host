@@ -1,7 +1,11 @@
+/*
+ * Interface for a key value store
+ * used to store measurements
+ *
+ */
 
 
 #define DATABASE "measure-host.xml"
-
 
 
 // Get/set the current measurement value

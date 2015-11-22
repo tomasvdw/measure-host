@@ -1,4 +1,8 @@
 
+/*
+ * Interface for request processing
+ */
+
 
 // returns the length of the first request 
 // passed in input or -1 if it contains 

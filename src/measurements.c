@@ -2,6 +2,7 @@
  * measurements.c
  *
  * Maintains the set of current measurements
+ * Simple key/value store
  */
 
 #include <stdlib.h>
@@ -16,6 +17,7 @@
 #include "measurements.h"
 
 
+// In memory database
 static ezxml_t store;
 
 
@@ -81,7 +83,22 @@ const char * measurement_get(const char *key)
 // Caller should free()
 char * measurement_getkeys()
 {
+    init();
+
+    int len=1; 
     char *result = malloc(1);
+    char *p = result;
+
+    ezxml_t child = store->child;
+    while(child != NULL)
+    {
+        len += strlen(child->name)+1;
+        result = realloc(result, len);
+        strcpy(p, child->name);
+        p += strlen(child->name) + 1; // move p to after \0
+        child = child->sibling;
+    }
+    *p = '\0';
     return result;
 }
 
@@ -128,7 +145,6 @@ static void test_getset()
     assert(strcmp(measurement_get("wok"), "bar") == 0);
     assert(strcmp(measurement_get("foo"), "2.0") == 0);
 
-    puts("Measurement tests OK");
 }
 
 static void test_persist()
@@ -184,8 +200,9 @@ static void test_getall()
     char *res = measurement_getkeys();
 
     // note we're testing fixed order, but this is not necessary
-    assert(memcmp(res, "bop\0wor\0wok\0\0", (3*4)+1) ==0);
+    assert(memcmp(res, "wok\0wor\0bop\0\0", (3*4)+1) ==0);
     
+    free(res);
 }
 
 
@@ -196,7 +213,7 @@ int main(void) {
     test_persist();
     test_getall();
 
-    puts("Measurement tests ok");
+    puts("Measurement tests OK");
 
     return 0;
 }
