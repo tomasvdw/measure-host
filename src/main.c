@@ -20,7 +20,7 @@
 // listen queue
 #define QUEUE_SIZE       25
 
-#define READ_CHUNK_SIZE  4
+#define READ_CHUNK_SIZE  1024
 #define MAX_REQUEST_SIZE 32 * 1024
 
 
@@ -114,7 +114,7 @@ void server_closesock(int sock)
 // or the amout of data read
 int server_read(int sock)
 {
-    printf("Incoming data @%d\n", sock);
+    //printf("Incoming data @%d\n", sock);
 
     // make space in client buffer
     int needed_space = clients[sock].len + READ_CHUNK_SIZE + 1;
@@ -129,9 +129,10 @@ int server_read(int sock)
             READ_CHUNK_SIZE);
 
 
-    if (r <= 0)
+    if (r <= 0
+        || r + clients[sock].len > MAX_REQUEST_SIZE)
     {
-        // error or EOF; handle the same
+        // error / EOF / max size reached: handle the same
         server_closesock(sock);
         return 0;
     }
