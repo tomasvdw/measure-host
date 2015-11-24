@@ -149,37 +149,40 @@ int server_read(int sock)
 // and processes and responds if possible
 void server_tryprocess(int sock)
 {
-    int end = request_findend(clients[sock].buffer);
-    if (end == -1)
-        return; // not yet a complete request
-
-    char *result = request_process(clients[sock].buffer, end);
-
-    if (result == NULL)
+    // Loop through each request in buffer
+    for(;;)
     {
-        // error, close connection
-        server_closesock(sock);
-        return;
-    }
-    // success.
-    // something to send?
-    if (*result != '\0') 
-    {
-        int s = write(sock, result, strlen(result));
-        if (s < 0)
+        int end = request_findend(clients[sock].buffer);
+        if (end == -1)
+            return; // not yet a complete request
+
+        char *result = request_process(clients[sock].buffer, end);
+
+        if (result == NULL)
         {
-            perror("write() failed");
+            // error, close connection
             server_closesock(sock);
             return;
         }
+        // success.
+        // something to send?
+        if (*result != '\0') 
+        {
+            int s = write(sock, result, strlen(result));
+            if (s < 0)
+            {
+                perror("write() failed");
+                server_closesock(sock);
+                return;
+            }
+        }
+        free(result);
+
+        // move data after this request to the start of the buffer
+        memmove(clients[sock].buffer, clients[sock].buffer+end, 
+                clients[sock].len - end + 1);
+        clients[sock].len -= end;
     }
-    free(result);
-
-    // move data after this request to the start of the buffer
-    memmove(clients[sock].buffer, clients[sock].buffer+end, 
-            clients[sock].len - end + 1);
-    clients[sock].len -= end;
-
 }
 
 
