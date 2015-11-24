@@ -10,21 +10,21 @@ to update and retrieve data
 
 To build and run the unit tests use
 
-   make test
+    make test
 
 To build the server use
 
-   make
+    make
 
 It is tested on Linux, but should work on any \*NIX os; 
 
 Some end-to-end can be run using
 
-   ./test-ee.sh
+    ./test-ee.sh
 
 To start the server use
 
-   ./measure-host
+    ./measure-host
 
 ## usage
 
