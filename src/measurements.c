@@ -51,6 +51,10 @@ void measurement_set(const char *key, const char *value)
 {
     init();
 
+    // silently ignore empty keys
+    if (*key == '\0')
+        return;
+
     // find existing child
     ezxml_t child = ezxml_child(store, key);
 
@@ -115,18 +119,17 @@ void measurement_write()
 
     // convert to string & write
     char * xml = ezxml_toxml(store);
-    if (fputs(xml, fnew) == EOF)
-    {
-        free(xml);
-        return;
-    }
+    int result = fputs(xml, fnew);
 
     free(xml);
     fclose(fnew);
 
-    // we use rename-overwrite to ensure
-    // atomic write
-    rename(DATABASE ".new", DATABASE);
+    if (result != EOF) // no error?
+    {
+        // we use rename-overwrite to ensure
+        // atomic write
+        rename(DATABASE ".new", DATABASE);
+    }
 }
 
 

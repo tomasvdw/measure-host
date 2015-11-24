@@ -123,6 +123,11 @@ int server_read(int sock)
     else
         clients[sock].buffer = realloc(clients[sock].buffer, needed_space);
 
+    if (clients[sock].buffer == NULL)
+    {
+        perror("Out of memory");
+        exit(1);
+    }
 
     int r = read( sock, 
             clients[sock].buffer + clients[sock].len, 
