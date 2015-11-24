@@ -10,8 +10,8 @@
 
 ## Setup
 
-The key/values will be kept in memory in the data structure used by the ezxml library. This seems to be sufficiently 
-efficient, and easy to use for (de)serialization to clients and disk.
+The key/values will be kept in memory using as a sorted array to allow for 
+fast lookups.
 
 The persistence format is the same XML format as returned to the client
 
