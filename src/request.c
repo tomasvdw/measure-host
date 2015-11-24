@@ -102,9 +102,10 @@ char *request_process(char *request, int len)
 
     // parse xml-request
     ezxml_t rq = ezxml_parse_str(request, len);
-    if (rq == NULL || rq->name == NULL)
+    const char *result = ezxml_error(rq);
+    if (rq == NULL || rq->name == NULL || *result !='\0')
     {
-        perror(ezxml_error(rq));
+        perror(result);
         return NULL;
     }
 
@@ -234,9 +235,11 @@ void test_findend()
 
     // partial request
     assert( request_findend("<update><mykey></mykey>") == -1); 
+
+    puts("Requests test - findend: OK");
 }
 
-// test with const char's
+// wrapper for test with const char's
 char * dotest_process(const char *p)
 {
     char *m = strdup(p);
@@ -274,6 +277,8 @@ void test_update()
 
     assert(*res == '\0'); // no response
     assert(count_set == 2); // still 2 updates
+
+    puts("Requests test - update: OK");
 }
 
 void test_receive()
@@ -293,6 +298,7 @@ void test_receive()
                 "</status>\n") == 0
           );
 
+    puts("Requests test - receive: OK");
 }
 
 void test_receive_all()
@@ -309,6 +315,7 @@ void test_receive_all()
                 "</status>\n") == 0
           );
 
+    puts("Requests test - receive_all: OK");
 }
 
 int main(void) {

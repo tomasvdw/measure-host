@@ -34,9 +34,10 @@ static void init()
     {
         // load previous version
         store = ezxml_parse_fp(f);
+        const char *result = ezxml_error(store);
         fclose(f);
-        if (store == NULL)
-            perror(ezxml_error(store));
+        if (store == NULL || *result != '\0')
+            perror(result);
         else
             return;
 
@@ -148,6 +149,7 @@ static void test_getset()
     assert(strcmp(measurement_get("wok"), "bar") == 0);
     assert(strcmp(measurement_get("foo"), "2.0") == 0);
 
+    puts("Measurement test - getset: OK");
 }
 
 static void test_persist()
@@ -166,6 +168,8 @@ static void test_persist()
 
     // should get data from disk
     assert(strcmp(measurement_get("wok"), "baz") == 0);
+
+    puts("Measurement test - persist: OK");
 }
 
 static void test_failpersist()
@@ -186,7 +190,10 @@ static void test_failpersist()
     store = NULL;
 
     // should be empty
+    puts("Expecting parse error:");
     assert(strcmp(measurement_get("wok"), "") == 0);
+
+    puts("Measurement test - failpersist: OK");
 }
 
 
@@ -206,6 +213,7 @@ static void test_getall()
     assert(memcmp(res, "wok\0wor\0bop\0\0", (3*4)+1) ==0);
     
     free(res);
+    puts("Measurement test - getall: OK");
 }
 
 

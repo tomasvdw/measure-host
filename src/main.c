@@ -166,9 +166,11 @@ void server_tryprocess(int sock)
         if (result == NULL)
         {
             // error, close connection
+            puts("Invalid request");
             server_closesock(sock);
             return;
         }
+        puts("Proccessed request");
         // success.
         // something to send?
         if (*result != '\0') 
@@ -178,6 +180,7 @@ void server_tryprocess(int sock)
             {
                 perror("write() failed");
                 server_closesock(sock);
+                free(result);
                 return;
             }
         }
