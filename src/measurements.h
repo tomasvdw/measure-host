@@ -12,9 +12,9 @@
 void         measurement_set(const char *key, const char *value);
 const char * measurement_get(const char *key);
 
-// Get all keys as a \0\0-terminated list of strings
-// Caller should free()
-char * measurement_getkeys();
+// Get an array of keys
+// The count is passed back in count
+const char ** measurement_getkeys(int *count);
 
 // Write current state to disk
 void measurement_write();

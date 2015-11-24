@@ -18,34 +18,57 @@
 
 
 // In memory database
-static ezxml_t store;
+// an array of key-value pairs
+// each element is "key\0value\0"
+char **store = NULL;
+int store_len = 0;
 
 
 // Loads previously written measurements, 
 // or inits a new measurement store
 static void init()
 {
-    // already initialized
+    // already initialized?
     if (store != NULL)
         return;
+
+    store = malloc(0);
+    store_len = 0;
 
     FILE *f = fopen(DATABASE, "r");
     if (f != NULL)
     {
         // load previous version
-        store = ezxml_parse_fp(f);
-        const char *result = ezxml_error(store);
+        puts("Loading data from " DATABASE);
+
+        ezxml_t xml = ezxml_parse_fp(f);
+        const char *result = ezxml_error(xml);
         fclose(f);
+
         if (store == NULL || *result != '\0')
             perror(result);
         else
-            return;
+        {
+            ezxml_t child = xml->child;
+            while(child != NULL)
+            {
+                // key = tagname, value=text content
+                measurement_set(child->name, ezxml_txt(child));
+
+                child = child->sibling;
+            }
+        }
+        ezxml_free(xml);
 
     }
 
-    store = ezxml_new("status");
 }
 
+// wrapper for key-compare
+int compare(const void *s1, const void *s2)
+{
+    return (strcmp(*(char **)s1, *(char **)s2));
+}
 
 // Upserts a measurement value
 void measurement_set(const char *key, const char *value)
@@ -56,16 +79,52 @@ void measurement_set(const char *key, const char *value)
     if (*key == '\0')
         return;
 
-    // find existing child
-    ezxml_t child = ezxml_child(store, key);
+    int keylen = strlen(key);
+    int vallen = strlen(value);
 
-    if (child == NULL)
+    // find existing key
+    char **result = bsearch(&key, store, store_len,
+            sizeof(char*), compare);
+
+    if (result)
     {
-        // add new key
-        child = ezxml_add_child_d(store, key, 0);
-    }
+        // update existing
+        
+        // find old value, and make space
+        char *oldval = *result + keylen + 1;
+        if (strlen(oldval) < vallen)
+            *result = realloc(*result, (keylen+vallen+2)*sizeof(char*));
 
-    ezxml_set_txt_d(child, value);
+        // set value after key
+        strcpy((*result) + keylen+1, value);
+    }
+    else
+    {
+        // insert new; uses sorted insert
+
+        //make space
+        store_len++;
+        store = realloc(store, sizeof(char*) * store_len);
+
+        // find spot for insertion
+        int n;
+        for(n=0; n< store_len-1; n++)
+        {
+            if (strcmp(key, store[n]) < 0)
+                break;
+        }
+
+        // shift everything from n one down
+        memmove(store + n + 1, store + n,
+            sizeof(char*) * (store_len-n-1));
+
+        store[n] = malloc((keylen + vallen + 2)* sizeof(char*));
+        strcpy(store[n], key);
+        
+        // set value after key
+        strcpy(store[n] + keylen+1, value);
+
+    }
 }
 
 // returns the current value of the given key
@@ -74,40 +133,29 @@ const char * measurement_get(const char *key)
 {
     init();
 
-    ezxml_t child = ezxml_child(store, key);
+    // find existing child
+    char **result = bsearch(&key, store, store_len,
+            sizeof(char*), compare);
 
-    if (child == NULL)
+    if (result==NULL)
         return "";
     else
-        return ezxml_txt(child);
-
+        // return value stored after key
+        return (*result)+ strlen(*result) + 1;
 }
 
 
-// Get all keys as a \0\0-terminated list of strings
-// Caller should free()
-char * measurement_getkeys()
+// Get all keys as an array of strings
+// Stores the count in the passed variable
+const char ** measurement_getkeys(int *count)
 {
     init();
-
-    int len=1; 
-    char *result = malloc(1);
-    char *p = result;
-
-    ezxml_t child = store->child;
-    while(child != NULL)
-    {
-        len += strlen(child->name)+1;
-        result = realloc(result, len);
-        strcpy(p, child->name);
-        p += strlen(child->name) + 1; // move p to after \0
-        child = child->sibling;
-    }
-    *p = '\0';
-    return result;
+    *count = store_len;
+    return (const char**)store; 
 }
 
 // Stores the current measurement state to disk
+// We use the same xml format as requests
 void measurement_write()
 {
     // try writing to new file
@@ -118,11 +166,22 @@ void measurement_write()
         return;
     }
 
-    // convert to string & write
-    char * xml = ezxml_toxml(store);
-    int result = fputs(xml, fnew);
+    // write xml
+    fputs("<status>\n",fnew);
+    for(int n=0; n < store_len; n++)
+    {
+        // construct xml for this key/val
+        ezxml_t val_xml = ezxml_new(store[n]);
+        ezxml_set_txt(val_xml, store[n] + strlen(store[n])+1);
+        char *t = ezxml_toxml(val_xml);
 
-    free(xml);
+        fprintf(fnew, "  %s\n", t);
+
+        ezxml_free(val_xml);
+    }
+
+    // close up
+    int result = fputs("</status>\n", fnew);
     fclose(fnew);
 
     if (result != EOF) // no error?
@@ -131,6 +190,9 @@ void measurement_write()
         // atomic write
         rename(DATABASE ".new", DATABASE);
     }
+    else
+        perror("Write to database failed");
+    
 }
 
 
@@ -190,7 +252,6 @@ static void test_failpersist()
     store = NULL;
 
     // should be empty
-    puts("Expecting parse error:");
     assert(strcmp(measurement_get("wok"), "") == 0);
 
     puts("Measurement test - failpersist: OK");
@@ -207,12 +268,16 @@ static void test_getall()
     measurement_set("wor", "baz");
     measurement_set("bop", "baz");
 
-    char *res = measurement_getkeys();
+    int l;
+    const char **res = measurement_getkeys(&l);
+    measurement_write();
 
-    // note we're testing fixed order, but this is not necessary
-    assert(memcmp(res, "wok\0wor\0bop\0\0", (3*4)+1) ==0);
+    assert(l==3);
+    assert(strcmp(res[0], "bop") == 0);
+    assert(strcmp(res[1], "wok") == 0);
+    assert(strcmp(res[2], "wor") == 0);
+
     
-    free(res);
     puts("Measurement test - getall: OK");
 }
 

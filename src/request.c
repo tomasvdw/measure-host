@@ -70,14 +70,12 @@ static char * process_retrieve(ezxml_t request)
     if (child == NULL)
     {
         // no children means retrieve all
-        char *allkeys = measurement_getkeys();
-        char *p = allkeys;
-        while(*p) // end at \0\0
+        int count;
+        const char **allkeys = measurement_getkeys(&count);
+        for(int n=0; n < count;n++)
         {
-            append_result(p, &result, &alloced);
-            p += strlen(p) + 1;
+            append_result(allkeys[n], &result, &alloced);
         }
-        free(allkeys);
     }
     else
     {
@@ -212,11 +210,11 @@ const char * measurement_get(const char *key)
 }
 
 // mock getting all keys
-char * measurement_getkeys()
+static const char *allkeys[2] = {"key1","key2"};
+const char ** measurement_getkeys(int *count)
 {
-    char *p = malloc(50);
-    memcpy(p, "key1\0key2\0\0", 11);
-    return p;
+    *count = 2;
+    return allkeys;
 }
 
 void test_findend()
