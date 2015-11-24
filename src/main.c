@@ -78,7 +78,7 @@ static void server_listen()
 static void server_accept()
 {
     struct sockaddr_in clientaddr;
-    int size = sizeof (clientaddr);
+    unsigned size = sizeof (clientaddr);
     int incoming_fd = accept(fd_listen, 
             (struct sockaddr *) &clientaddr, &size);
 
